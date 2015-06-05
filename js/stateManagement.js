@@ -1,7 +1,11 @@
 (function() {
 
   var Game = {},
-      paintCellType,
+      PaintContext = function(type, coord) {
+        this.type = type;
+        this.start = this.end = coord;
+      },
+      paintContext = null,
       cellTypes = {
         grass: 'grass',
         forest: 'forest',
@@ -14,6 +18,10 @@
       Coord = function(x, y) {
         this.x = x;
         this.y = y;
+      },
+      Rect = function(a,b) {
+        this.topLeft = new Coord(Math.min(a.x, b.x), Math.min(a.y, b.y));
+        this.bottomRight = new Coord(Math.max(a.x, b.x), Math.max(a.y, b.y));
       };
 
   Coord.prototype.distanceFrom = function(coord) {
@@ -25,6 +33,10 @@
     // c^2 = a^2 + b^2
     return Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
   };
+
+  Rect.prototype.indexes = function() {
+    for (var i = this.topLeft.; i < this.topLeft
+  }
 
   function generateType(coord, seeds) {
     // Generate the cell type based on the distance from seeds (close to seed = forest)
@@ -101,6 +113,7 @@
 
     sprite.addEventListener('mousedown', handleCellClick(cell));
     sprite.addEventListener('mouseover', handleCellMouseOver(cell));
+    sprite.addEventListener('mouseup', handleCellMouseUp(cell));
 
     Game.stage.addChild(sprite); // possible memory leak?
     sprite.play(cell.type);
@@ -108,19 +121,27 @@
 
   function handleCellClick(cell) {
     return function() {
-      paintCellType = (cell.type === cellTypes.blueberries) ? cellTypes.forest : cellTypes.blueberries;
-      paintCell(cell);
-      updateProfitLv1();
+      paintType = (cell.type === cellTypes.blueberries) ? cellTypes.forest : cellTypes.blueberries;
+      paintContext = new PaintContext(paintType, cell.coords.x, cell.coords.y);
     };
   }
 
   function handleCellMouseOver(cell) {
     return function(e) {
-      if (e.nativeEvent.buttons === 1 || e.nativeEvent.buttons === 3) {
-        paintCell(cell);
+      if (paintContext) {
+        paintContext.endX = cell.coords.x;
+        paintContext.endY = cell.coords.y;
       }
+    };
+  }
 
-      updateProfitLv1();
+  function handleCellMouseUp(cell) {
+    return function(e) {
+      if (paintContext) {
+        paintCell(cell);
+        updateProfitLv1();
+        paintContext = null;
+      }
     };
   }
 
